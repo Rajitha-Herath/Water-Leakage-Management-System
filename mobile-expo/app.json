@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "NWSDB Field Operations",
+    "slug": "nwsdb-field-operations",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "lk.nwsdb.fieldoperations",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "lk.nwsdb.fieldoperations",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow NWSDB Field Operations to select a completion photograph.",
+          "cameraPermission": "Allow NWSDB Field Operations to capture a completion photograph.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow NWSDB Field Operations to record the officer's site-arrival position."
+        }
+      ],
+      "expo-font"
+    ]
+  }
+}

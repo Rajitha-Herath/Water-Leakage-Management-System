@@ -1,0 +1,51 @@
+services:
+  mongodb:
+    image: mongo:8.0
+    container_name: nwsdb-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: water_leakage
+    volumes:
+      - mongodb_data:/data/db
+
+  api:
+    build: ./server
+    container_name: nwsdb-api
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGODB_URI: mongodb://mongodb:27017/water_leakage
+      JWT_SECRET: ${JWT_SECRET:-change-this-docker-development-secret-before-use}
+      JWT_EXPIRES_IN: 30m
+      CLIENT_URL: http://localhost:5173,http://localhost:8080
+      UPLOAD_DIR: uploads
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_WHATSAPP_NUMBER: ${TWILIO_WHATSAPP_NUMBER:-}
+      TWILIO_VALIDATE_SIGNATURE: ${TWILIO_VALIDATE_SIGNATURE:-false}
+      TWILIO_WEBHOOK_URL: ${TWILIO_WEBHOOK_URL:-}
+    volumes:
+      - api_uploads:/app/uploads
+
+  web:
+    build:
+      context: ./web
+      args:
+        VITE_API_BASE_URL: http://localhost:5000/api
+    container_name: nwsdb-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
+volumes:
+  mongodb_data:
+  api_uploads:
