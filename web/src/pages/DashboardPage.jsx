@@ -13,7 +13,6 @@ const emptyFilters = { q: '', status: '', source: '', officer: '', from: '', to:
 export default function DashboardPage() {
   const [complaints, setComplaints] = useState([]);
   const [officers, setOfficers] = useState([]);
-  const [summary, setSummary] = useState(null);
   const [filters, setFilters] = useState(emptyFilters);
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,21 +20,46 @@ export default function DashboardPage() {
   const [lastUpdated, setLastUpdated] = useState(null);
 
   const query = useMemo(() => Object.fromEntries(Object.entries(filters).filter(([, value]) => value)), [filters]);
+  const summary = useMemo(() => {
+    const statuses = {
+      New: 0,
+      Assigned: 0,
+      Reached: 0,
+      In_Progress: 0,
+      Resolved: 0
+    };
+
+    complaints.forEach((complaint) => {
+      if (Object.hasOwn(statuses, complaint.status)) statuses[complaint.status] += 1;
+    });
+
+    const total = complaints.length;
+    const resolved = statuses.Resolved;
+
+    return {
+      statuses,
+      kpis: {
+        total,
+        active: total - resolved,
+        resolved,
+        resolutionRate: total ? Number(((resolved / total) * 100).toFixed(1)) : 0
+      }
+    };
+  }, [complaints]);
+
   const load = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const [complaintResult, officerResult, summaryResult] = await Promise.all([
+      const [complaintResult, officerResult] = await Promise.all([
         api.get('/complaints', { params: { ...query, limit: 100 } }),
-        api.get('/users', { params: { role: 'OFFICER', active: true } }),
-        api.get('/reports/summary', { params: { from: filters.from || undefined, to: filters.to || undefined } })
+        api.get('/users', { params: { role: 'OFFICER', active: true } })
       ]);
       setComplaints(complaintResult.data.complaints);
       setOfficers(officerResult.data.users);
-      setSummary(summaryResult.data.summary);
       setLastUpdated(new Date());
     } catch (err) { setError(errorMessage(err)); }
     finally { setLoading(false); }
-  }, [query, filters.from, filters.to]);
+  }, [query]);
 
   useEffect(() => { const timer = setTimeout(load, 250); return () => clearTimeout(timer); }, [load]);
   useEffect(() => {
@@ -62,7 +86,7 @@ export default function DashboardPage() {
       </section>
       <section className="dashboard-split">
         <article className="panel map-panel"><div className="panel-head"><div><p className="eyebrow">Geographic view</p><h2>Leak locations</h2></div><span>{complaints.length} shown</span></div><MapPanel complaints={complaints} /></article>
-        <article className="panel status-panel"><div className="panel-head"><div><p className="eyebrow">Workload</p></div></div><div className="status-summary">{['New', 'Assigned', 'Reached', 'In_Progress', 'Resolved'].map((status) => { const count = summary?.statuses[status] ?? 0; const total = summary?.kpis.total || 1; return <div key={status}><div><StatusBadge status={status} /><b>{count}</b></div><span><i style={{ width: `${(count / total) * 100}%` }} /></span></div>; })}</div></article>
+        <article className="panel status-panel"><div className="panel-head"><div><p className="eyebrow">Workload</p><h2>Status overview</h2></div></div><div className="status-summary">{['New', 'Assigned', 'Reached', 'In_Progress', 'Resolved'].map((status) => { const count = summary?.statuses[status] ?? 0; const total = summary?.kpis.total || 1; return <div key={status}><div><StatusBadge status={status} /><b>{count}</b></div><span><i style={{ width: `${(count / total) * 100}%` }} /></span></div>; })}</div></article>
       </section>
       <section className="panel table-panel">
         <div className="panel-head table-title"><div><p className="eyebrow">Complaint register</p><h2>All leakage reports</h2></div><button className="text-button" onClick={() => setFilters(emptyFilters)}>Clear filters</button></div>
